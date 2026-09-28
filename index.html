@@ -237,7 +237,9 @@
   function newTest(focus) {
     clearInterval(timerId);
     timeLeft = duration;
-    words = pick(48); typed = []; wordIndex = 0;
+    // fixed passage sized to the chosen time: finishing it ends the test early
+    var count = duration === 30 ? 36 : duration === 120 ? 110 : 60;
+    words = pick(count); typed = []; wordIndex = 0;
     started = false; finished = false;
     hiddenInput.value = '';
     testArea.classList.remove('hidden');
@@ -275,7 +277,7 @@
         total++;
         if (j < w.length && t[j] === w[j]) correct++;
       }
-      if (i < wordIndex) total++; // the space that finished the word
+      if (i < wordIndex) { total++; correct++; } // the space that finished the word
     }
     return { correct: correct, total: total };
   }
@@ -315,7 +317,8 @@
   /* ---------- results ---------- */
   function showResults() {
     var s = score();
-    var wpm = calcWpm(s, duration / 60);
+    var elapsed = duration - timeLeft; // real time used (passage may finish early)
+    var wpm = calcWpm(s, Math.max(elapsed, 1) / 60);
     var acc = s.total ? Math.round(s.correct / s.total * 100) : 100;
     $('finalWpm').textContent = wpm;
     $('finalAcc').textContent = acc + '%';
@@ -350,8 +353,8 @@
       if (val.length > 1) {
         typed[wordIndex] = val.slice(0, -1);
         wordIndex++;
-        if (wordIndex >= words.length - 8) words = words.concat(pick(24));
         hiddenInput.value = '';
+        if (wordIndex >= words.length) { render(); updateLive(); finish(); return; }
       } else {
         hiddenInput.value = '';
       }
