@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>TypeSpeed - Typing Speed Test</title>
+<meta name="description" content="TypeSpeed — a fast, mobile-friendly typing speed test. Measure your WPM and accuracy.">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg:#ffffff;
+    --card:#ffffff;
+    --text:#191919;
+    --muted:#8a8a8a;
+    --dim:#c9c9c9;
+    --border:#e9e9e9;
+    --input:#f4f4f5;
+    --accent:#6366f1;
+    --accent-soft:rgba(99,102,241,.1);
+    --good:#16a34a;
+    --bad:#e12d39;
+    --radius:14px;
+  }
+  [data-theme="dark"] {
+    --bg:#0b0b0d;
+    --card:#141417;
+    --text:#f2f2f2;
+    --muted:#9a9aa0;
+    --dim:#4a4a52;
+    --border:#232327;
+    --input:#17171b;
+    --accent:#818cf8;
+    --accent-soft:rgba(129,140,248,.14);
+    --good:#4ade80;
+    --bad:#f87171;
+  }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    transition:background .25s ease,color .25s ease;
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+  .sticky { position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:1px solid var(--border); }
+  .topbar {
+    max-width:640px; margin:0 auto; padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand { display:flex; align-items:center; gap:10px; font-size:22px; font-weight:800; letter-spacing:-.01em; }
+  .brand .dot { width:12px; height:12px; border-radius:50%; background:var(--accent); }
+  .brand em { font-style:normal; color:var(--accent); }
+  .icon-btn {
+    width:42px; height:42px; border-radius:50%; border:1px solid var(--border);
+    background:transparent; color:var(--text); font-size:17px; cursor:pointer;
+    display:grid; place-items:center; touch-action:manipulation;
+  }
+  .wrap { max-width:640px; margin:0 auto; padding:16px 16px 110px; width:100%; flex:1; }
+
+  .stats { display:flex; gap:10px; margin-bottom:12px; }
+  .stat {
+    flex:1; background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:12px 8px; text-align:center;
+  }
+  .stat .v { font-size:26px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .stat .v.accent { color:var(--accent); }
+  .stat .l { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-top:2px; }
+
+  .pills { display:flex; gap:8px; margin-bottom:12px; }
+  .pills button {
+    flex:1; padding:11px 4px; border-radius:999px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); font-family:inherit;
+    font-size:13.5px; font-weight:700; cursor:pointer; touch-action:manipulation;
+  }
+  .pills button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  .words-shell { position:relative; }
+  #wordsBox {
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 18px; font-size:20px; line-height:2.1; user-select:none; -webkit-user-select:none;
+    min-height:180px; cursor:text; overflow-wrap:anywhere;
+  }
+  #wordsBox .word { border-radius:6px; padding:2px 1px; }
+  #wordsBox .word.current { background:var(--accent-soft); }
+  #wordsBox .letter { color:var(--dim); position:relative; }
+  #wordsBox .letter.ok { color:var(--text); }
+  #wordsBox .letter.err { color:var(--bad); }
+  #wordsBox .letter.extra { color:var(--bad); opacity:.7; }
+  #wordsBox .caret::before {
+    content:""; position:absolute; left:-1px; top:2px; bottom:2px; width:2px;
+    background:var(--accent); border-radius:2px; animation:blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity:0; } }
+  #hiddenInput {
+    position:absolute; inset:0; width:100%; height:100%;
+    opacity:0; border:none; outline:none; background:transparent;
+    font-size:16px; /* prevents iOS zoom */
+  }
+  .tap-hint { text-align:center; color:var(--muted); font-size:13.5px; margin-top:10px; }
+
+  .btn-row { display:flex; gap:10px; margin-top:14px; }
+  .btn {
+    flex:1; padding:15px; border-radius:var(--radius); border:none; cursor:pointer;
+    font-family:inherit; font-size:16px; font-weight:800; touch-action:manipulation;
+  }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .btn.ghost { background:var(--input); color:var(--text); }
+
+  .results {
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:28px 20px; text-align:center; margin-bottom:12px;
+  }
+  .results h2 { font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px; }
+  .results .wpm { font-size:64px; font-weight:800; color:var(--accent); letter-spacing:-.03em; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .results .wpm small { font-size:20px; font-weight:700; color:var(--muted); }
+  .results .grid { display:flex; gap:10px; margin:18px 0 4px; }
+  .results .cell { flex:1; background:var(--input); border-radius:12px; padding:12px 6px; }
+  .results .cell .v { font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .results .cell .l { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+  .results .best { margin-top:12px; font-size:13.5px; color:var(--muted); }
+  .results .best b { color:var(--good); }
+  .hidden { display:none !important; }
+
+  .foot {
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    text-align:center; color:var(--muted); font-size:13px;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:var(--bg); border-top:1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="sticky">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span><span>Type<em>Speed</em></span></div>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode">🌙</button>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="v accent" id="wpmEl">0</div><div class="l">WPM</div></div>
+    <div class="stat"><div class="v" id="accEl">100%</div><div class="l">Accuracy</div></div>
+    <div class="stat"><div class="v" id="timeEl">60s</div><div class="l">Time</div></div>
+  </div>
+
+  <div class="pills" id="timePills">
+    <button data-t="30">30s</button>
+    <button class="active" data-t="60">60s</button>
+    <button data-t="120">2 min</button>
+  </div>
+
+  <div id="testArea">
+    <div class="words-shell">
+      <div id="wordsBox"></div>
+      <input id="hiddenInput" type="text" autocomplete="off" autocapitalize="off"
+        autocorrect="off" spellcheck="false" aria-label="Type here">
+    </div>
+    <p class="tap-hint" id="tapHint">Tap the text and start typing</p>
+    <div class="btn-row">
+      <button class="btn ghost" id="newTextBtn">New text</button>
+      <button class="btn primary" id="restartBtn">Restart</button>
+    </div>
+  </div>
+
+  <div id="resultsArea" class="hidden">
+    <div class="results">
+      <h2>Your speed</h2>
+      <div class="wpm"><span id="finalWpm">0</span> <small>WPM</small></div>
+      <div class="grid">
+        <div class="cell"><div class="v" id="finalAcc">0%</div><div class="l">Accuracy</div></div>
+        <div class="cell"><div class="v" id="finalChars">0</div><div class="l">Chars</div></div>
+        <div class="cell"><div class="v" id="finalTime">60s</div><div class="l">Time</div></div>
+      </div>
+      <p class="best" id="bestLine"></p>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="newTextBtn2">New text</button>
+      <button class="btn primary" id="againBtn">Try again</button>
+    </div>
+  </div>
+</main>
+
+<footer class="foot">Made with ❤️ by sauravhhh</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var BANK = ("the be to of and a in that have I it for not on with he as you do at " +
+    "this but his by from they we say her she or an will my one all would there their " +
+    "what so up out if about who get which go me when make can like time no just him " +
+    "know take people into year your good some could them see other than then now look " +
+    "only come its over think also back after use two how our work first well way even " +
+    "new want because any these give day most us water long very little after word " +
+    "through back thing hand night life child house world school still learn plant " +
+    "cover song being idea fish mountain stop once base hear horse cut sure watch " +
+    "color face wood main open seem together next white children begin got walk " +
+    "example ease paper group always music those both mark often letter until mile " +
+    "river car feet care second book carry took science eat room friend began").split(" ");
+
+  var duration = 60, timeLeft = 60;
+  var words = [], typed = [], wordIndex = 0;
+  var started = false, finished = false, timerId = null;
+
+  function $(id) { return document.getElementById(id); }
+  var wordsBox = $('wordsBox'), hiddenInput = $('hiddenInput'),
+      wpmEl = $('wpmEl'), accEl = $('accEl'), timeEl = $('timeEl'),
+      testArea = $('testArea'), resultsArea = $('resultsArea'),
+      themeBtn = $('themeBtn');
+
+  /* ---------- theme ---------- */
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+    try { localStorage.setItem('typespeed-theme', t); } catch (e) {}
+  }
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('typespeed-theme'); } catch (e) {}
+  setTheme(savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  themeBtn.addEventListener('click', function () {
+    setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ---------- helpers ---------- */
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function pick(n) {
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(BANK[Math.floor(Math.random() * BANK.length)]);
+    return out;
+  }
+
+  /* ---------- test lifecycle ---------- */
+  function newTest(focus) {
+    clearInterval(timerId);
+    timeLeft = duration;
+    words = pick(48); typed = []; wordIndex = 0;
+    started = false; finished = false;
+    hiddenInput.value = '';
+    testArea.classList.remove('hidden');
+    resultsArea.classList.add('hidden');
+    render();
+    updateLive();
+    if (focus) { try { hiddenInput.focus({ preventScroll: true }); } catch (e) { hiddenInput.focus(); } }
+  }
+
+  function startTimer() {
+    started = true;
+    timerId = setInterval(function () {
+      timeLeft--;
+      if (timeLeft <= 0) { finish(); return; }
+      updateLive();
+    }, 1000);
+  }
+
+  function finish() {
+    finished = true;
+    clearInterval(timerId);
+    timeLeft = 0;
+    updateLive();
+    try { hiddenInput.blur(); } catch (e) {}
+    showResults();
+  }
+
+  /* ---------- scoring ---------- */
+  function score() {
+    var correct = 0, total = 0;
+    var last = Math.min(wordIndex, words.length - 1);
+    for (var i = 0; i <= last; i++) {
+      var w = words[i], t = typed[i] || '';
+      for (var j = 0; j < t.length; j++) {
+        total++;
+        if (j < w.length && t[j] === w[j]) correct++;
+      }
+      if (i < wordIndex) total++; // the space that finished the word
+    }
+    return { correct: correct, total: total };
+  }
+
+  function calcWpm(s, mins) {
+    return mins > 0 ? Math.round((s.correct / 5) / mins) : 0;
+  }
+
+  function updateLive() {
+    var s = score();
+    var elapsed = duration - timeLeft;
+    wpmEl.textContent = calcWpm(s, elapsed / 60);
+    accEl.textContent = (s.total ? Math.round(s.correct / s.total * 100) : 100) + '%';
+    timeEl.textContent = timeLeft + 's';
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    var html = '';
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i], t = typed[i] || '';
+      html += '<span class="word' + (i === wordIndex ? ' current' : '') + '">';
+      var len = Math.max(w.length, t.length);
+      for (var j = 0; j < len; j++) {
+        var ch = j < w.length ? w[j] : '';
+        var tch = j < t.length ? t[j] : null;
+        var cls = 'letter';
+        if (tch !== null) cls += (j < w.length) ? (tch === ch ? ' ok' : ' err') : ' extra';
+        if (i === wordIndex && !finished && j === t.length) cls += ' caret';
+        html += '<span class="' + cls + '">' + esc(ch || tch || '') + '</span>';
+      }
+      html += '</span> ';
+    }
+    wordsBox.innerHTML = html;
+  }
+
+  /* ---------- results ---------- */
+  function showResults() {
+    var s = score();
+    var wpm = calcWpm(s, duration / 60);
+    var acc = s.total ? Math.round(s.correct / s.total * 100) : 100;
+    $('finalWpm').textContent = wpm;
+    $('finalAcc').textContent = acc + '%';
+    $('finalChars').textContent = s.correct + '/' + s.total;
+    $('finalTime').textContent = duration + 's';
+
+    var key = 'typespeed-best-' + duration, best = 0;
+    try { best = parseInt(localStorage.getItem(key) || '0', 10) || 0; } catch (e) {}
+    var line = $('bestLine');
+    if (wpm > best && wpm > 0) {
+      try { localStorage.setItem(key, String(wpm)); } catch (e) {}
+      line.innerHTML = '🎉 New personal best for ' + duration + 's!';
+    } else if (best > 0) {
+      line.innerHTML = 'Personal best (' + duration + 's): <b>' + best + ' WPM</b>';
+    } else {
+      line.textContent = '';
+    }
+
+    testArea.classList.add('hidden');
+    resultsArea.classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ---------- input handling ---------- */
+  hiddenInput.addEventListener('input', function () {
+    if (finished) { hiddenInput.value = ''; return; }
+    if (!started) startTimer();
+    var val = hiddenInput.value;
+    var w = words[wordIndex] || '';
+    if (val.length > w.length + 12) { val = val.slice(0, w.length + 12); hiddenInput.value = val; }
+    if (val.charAt(val.length - 1) === ' ') {
+      if (val.length > 1) {
+        typed[wordIndex] = val.slice(0, -1);
+        wordIndex++;
+        if (wordIndex >= words.length - 8) words = words.concat(pick(24));
+        hiddenInput.value = '';
+      } else {
+        hiddenInput.value = '';
+      }
+    } else {
+      typed[wordIndex] = val;
+    }
+    render();
+    updateLive();
+  });
+
+  hiddenInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Backspace' && hiddenInput.value === '' && wordIndex > 0 && !finished) {
+      e.preventDefault();
+      wordIndex--;
+      hiddenInput.value = typed[wordIndex] || '';
+      render();
+      updateLive();
+    }
+  });
+
+  /* ---------- controls ---------- */
+  document.querySelectorAll('#timePills button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      duration = parseInt(b.dataset.t, 10);
+      document.querySelectorAll('#timePills button').forEach(function (x) {
+        x.classList.toggle('active', x === b);
+      });
+      newTest(false);
+    });
+  });
+  $('restartBtn').addEventListener('click', function () { newTest(true); });
+  $('againBtn').addEventListener('click', function () { newTest(true); });
+  $('newTextBtn').addEventListener('click', function () { newTest(true); });
+  $('newTextBtn2').addEventListener('click', function () { newTest(true); });
+
+  newTest(false);
+})();
+</script>
+</body>
+</html>
